@@ -1,6 +1,11 @@
 # Solana Secp256k1 ECDSA
 
-A `no_std` compatible ECDSA implementation for the Secp256k1 curve, designed for use within the Solana ecosystem.
+[![CI](https://github.com/blueshift-gg/solana-secp256k1-ecdsa/actions/workflows/ci.yml/badge.svg)](https://github.com/blueshift-gg/solana-secp256k1-ecdsa/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/solana-secp256k1-ecdsa.svg)](https://crates.io/crates/solana-secp256k1-ecdsa)
+[![docs.rs](https://docs.rs/solana-secp256k1-ecdsa/badge.svg)](https://docs.rs/solana-secp256k1-ecdsa)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/blueshift-gg/solana-secp256k1-ecdsa/blob/master/LICENSE)
+
+A `no_std` compatible ECDSA implementation for the Secp256k1 curve, designed for use within the Solana ecosystem. Built on [`solana-secp256k1`](https://crates.io/crates/solana-secp256k1) primitives.
 
 ## Overview
 
@@ -23,7 +28,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-solana-secp256k1-ecdsa = "0.1.0"
+solana-secp256k1-ecdsa = "0.2.0"
 ```
 
 ### Creating Signatures
@@ -32,17 +37,17 @@ Enable the `sign` feature flag to use signature creation functionality:
 
 ```toml
 [dependencies]
-solana-secp256k1-ecdsa = { version = "0.1.0", features = ["sign"] }
+solana-secp256k1-ecdsa = { version = "0.2.0", features = ["sign"] }
 ```
 
 #### Basic Signing
 
 ```rust
-use solana_secp256k1_ecdsa::{Secp256k1EcdsaSignature, hash::Sha256};
+use solana_secp256k1_ecdsa::{Scalar, Secp256k1EcdsaSignature, hash::sha256::Sha256};
 
 // Your message and private key
 let message = b"Hello, Solana!";
-let private_key: [u8; 32] = [/* your private key */];
+let private_key = Scalar([/* your private key bytes */]);
 
 // Sign the message
 let signature = Secp256k1EcdsaSignature::sign::<Sha256>(message, &private_key)?;
@@ -51,34 +56,47 @@ let signature = Secp256k1EcdsaSignature::sign::<Sha256>(message, &private_key)?;
 #### Signing with a Custom Ephemeral Key
 
 ```rust
-use solana_secp256k1_ecdsa::{Secp256k1EcdsaSignature, hash::Sha256};
+use solana_secp256k1_ecdsa::{Scalar, Secp256k1EcdsaSignature, hash::sha256::Sha256};
 
 // Your message, ephemeral key, and private key
 let message = b"Hello, Solana!";
-let ephemeral_key: [u8; 32] = [/* your ephemeral key */];
-let private_key: [u8; 32] = [/* your private key */];
+let ephemeral_key = Scalar([/* your ephemeral key bytes */]);
+let private_key = Scalar([/* your private key bytes */]);
 
 // Sign with custom k
 let signature = Secp256k1EcdsaSignature::sign_with_k::<Sha256>(
-    message, 
-    &ephemeral_key, 
-    &private_key
+    message,
+    &ephemeral_key,
+    &private_key,
 )?;
 ```
 
 ### Verifying Signatures
 
 ```rust
-use solana_secp256k1_ecdsa::{Secp256k1EcdsaSignature, hash::Sha256};
-use solana_secp256k1::Pubkey;
+use solana_secp256k1_ecdsa::{
+    Scalar, Secp256k1EcdsaSignature, UncompressedPoint, hash::sha256::Sha256,
+};
 
-// Your message, signature, and public key
+// Your message, signature, and private key
 let message = b"Hello, Solana!";
 let signature: Secp256k1EcdsaSignature = /* your signature */;
-let public_key: Pubkey = /* your public key */;
+let private_key = Scalar([/* your private key bytes */]);
+
+// Derive the public key from the private key
+let public_key = UncompressedPoint::try_from(private_key)?;
 
 // Verify the signature
-signature.verify::<Sha256, _>(message, public_key)?;
+signature.verify::<Sha256, UncompressedPoint>(message, public_key)?;
+```
+
+## Static syscalls
+
+If your target supports the Upstream BPF / sBPFv3 static-syscall ABI, enable the `static-syscalls` feature. The flag is forwarded to every dep in the stack (`solana-secp256k1`, `solana-rfc6979`, `solana-nostd-sha256`, `solana-nostd-keccak`) so the resulting `.so` calls each syscall directly via a murmur3-hashed fn-pointer transmute instead of an `extern "C"` PLT relocation.
+
+```toml
+[dependencies]
+solana-secp256k1-ecdsa = { version = "0.2.0", features = ["static-syscalls"] }
 ```
 
 ## Security Notes
@@ -107,4 +125,4 @@ Use this library at your own risk.
 
 ## License
 
-MIT
+Licensed under the [MIT License](https://github.com/blueshift-gg/solana-secp256k1-ecdsa/blob/master/LICENSE). The license includes the standard "as-is" warranty disclaimer — use at your own risk.

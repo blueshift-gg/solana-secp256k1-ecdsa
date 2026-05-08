@@ -1,18 +1,36 @@
+#[cfg(any(
+    feature = "bsm",
+    feature = "esm",
+    all(feature = "sign", feature = "sha256")
+))]
+use crate::Scalar;
+#[cfg(any(
+    feature = "bsm",
+    feature = "esm",
+    all(feature = "sign", feature = "sha256")
+))]
+use crate::Secp256k1EcdsaSignature;
+#[cfg(any(feature = "bsm", feature = "esm"))]
+use crate::UncompressedPoint;
+
+#[cfg(feature = "bsm")]
 use crate::hash::bsm::BSM;
+#[cfg(feature = "esm")]
 use crate::hash::esm::ESM;
+#[cfg(all(feature = "sign", feature = "sha256"))]
+use crate::hash::sha256::Sha256;
+#[cfg(all(feature = "sign", feature = "sha256"))]
 use crate::hash::sha256d::Sha256d;
-use solana_secp256k1::UncompressedPoint;
 
-use crate::{hash::sha256::Sha256, Secp256k1EcdsaSignature};
-
+#[cfg(all(feature = "sign", feature = "sha256"))]
 #[test]
 fn test_signature_generation() {
     let message = *b"Hello";
-    let privkey = [
+    let privkey = Scalar([
         0xef, 0x23, 0x5a, 0xac, 0xf9, 0x0d, 0x9f, 0x4a, 0xad, 0xd8, 0xc9, 0x2e, 0x4b, 0x25, 0x62,
         0xe1, 0xd9, 0xeb, 0x97, 0xf0, 0xdf, 0x9b, 0xa3, 0xb5, 0x08, 0x25, 0x87, 0x39, 0xcb, 0x01,
         0x3d, 0xb2,
-    ];
+    ]);
 
     let ecdsa_signature = Secp256k1EcdsaSignature::sign::<Sha256>(message.as_ref(), &privkey)
         .expect("Invalid signature")
@@ -30,6 +48,7 @@ fn test_signature_generation() {
     );
 }
 
+#[cfg(all(feature = "sign", feature = "sha256"))]
 #[test]
 fn test_bitcoin_signature_generation() {
     let message = [
@@ -60,14 +79,14 @@ fn test_bitcoin_signature_generation() {
         0x83, 0x00, 0x00, 0x00,
     ];
 
-    let privkey = [
+    let privkey = Scalar([
         0x42, 0x8a, 0x7a, 0xee, 0x9f, 0x0c, 0x2a, 0xf0, 0xcd, 0x19, 0xaf, 0x3c, 0xf1, 0xc7, 0x81,
         0x49, 0x95, 0x1e, 0xa5, 0x28, 0x72, 0x69, 0x89, 0xb2, 0xe8, 0x3e, 0x47, 0x78, 0xd2, 0xc3,
         0xf8, 0x90,
-    ];
+    ]);
 
     let ecdsa_signature: Secp256k1EcdsaSignature =
-        Secp256k1EcdsaSignature::sign::<Sha256d>(&message.as_ref(), &privkey)
+        Secp256k1EcdsaSignature::sign::<Sha256d>(message.as_ref(), &privkey)
             .expect("Invalid signature")
             .normalize_s();
 
@@ -83,18 +102,19 @@ fn test_bitcoin_signature_generation() {
     );
 }
 
+#[cfg(all(feature = "sign", feature = "bsm"))]
 #[test]
 fn test_bitcoin_signed_message_generation() {
     let message = b"test";
 
-    let privkey = [
+    let privkey = Scalar([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x01,
-    ];
+    ]);
 
     let ecdsa_signature: Secp256k1EcdsaSignature =
-        Secp256k1EcdsaSignature::sign::<BSM>(&message.as_ref(), &privkey)
+        Secp256k1EcdsaSignature::sign::<BSM>(message.as_ref(), &privkey)
             .expect("Invalid signature")
             .normalize_s();
 
@@ -110,18 +130,19 @@ fn test_bitcoin_signed_message_generation() {
     );
 }
 
+#[cfg(all(feature = "sign", feature = "esm"))]
 #[test]
 fn test_ethereum_signed_message_generation() {
     let message = b"test";
 
-    let privkey = [
+    let privkey = Scalar([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x01,
-    ];
+    ]);
 
     let ecdsa_signature: Secp256k1EcdsaSignature =
-        Secp256k1EcdsaSignature::sign::<ESM>(&message.as_ref(), &privkey)
+        Secp256k1EcdsaSignature::sign::<ESM>(message.as_ref(), &privkey)
             .expect("Invalid signature")
             .normalize_s();
 
@@ -137,6 +158,7 @@ fn test_ethereum_signed_message_generation() {
     );
 }
 
+#[cfg(feature = "esm")]
 #[test]
 fn test_ethereum_signed_message_verify() {
     let message = b"test";
@@ -149,19 +171,20 @@ fn test_ethereum_signed_message_verify() {
         0xe3, 0xde, 0x0e, 0x37,
     ]);
 
-    let privkey = [
+    let privkey = Scalar([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x01,
-    ];
+    ]);
 
     let pubkey = UncompressedPoint::try_from(privkey).expect("Invalid private key");
 
-    let _ = signature
+    signature
         .verify::<ESM, UncompressedPoint>(message, pubkey)
         .expect("Invalid signature");
 }
 
+#[cfg(feature = "bsm")]
 #[test]
 fn test_bitcoin_signed_message_verify() {
     let message = b"test";
@@ -174,15 +197,15 @@ fn test_bitcoin_signed_message_verify() {
         0xcf, 0x01, 0xf0, 0x94,
     ]);
 
-    let privkey = [
+    let privkey = Scalar([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x01,
-    ];
+    ]);
 
     let pubkey = UncompressedPoint::try_from(privkey).expect("Invalid private key");
 
-    let _ = signature
+    signature
         .verify::<BSM, UncompressedPoint>(message, pubkey)
         .expect("Invalid signature");
 }

@@ -1,10 +1,17 @@
 [package]
 name = "solana-secp256k1-ecdsa"
-description = "Sign and verify Secp256k1 ECDSA signatures in SVM"
 authors = ["Dean Little <@deanmlittle>"]
-version = "0.1.1"
-edition = "2021"
+description = "Sign and verify Secp256k1 ECDSA signatures in SVM"
 license = "MIT"
+version = "0.2.0"
+edition = "2024"
+repository = "https://github.com/blueshift-gg/solana-secp256k1-ecdsa"
+readme = "Readme.md"
+keywords = ["secp256k1", "solana", "ecdsa", "no-std", "crypto"]
+categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
+exclude = [".github/", ".gitignore"]
+
+[lib]
 
 [features]
 default = ["esm", "bsm", "sign"]
@@ -13,14 +20,27 @@ bsm = ["sha256"]
 esm = ["keccak", "sha256", "itoa"]
 keccak = ["solana-nostd-keccak"]
 sha256 = ["solana-nostd-sha256"]
+# Use the Upstream BPF/sBPFv3 static-syscall ABI (murmur3-hashed name → fn
+# pointer transmute) instead of dynamic `extern "C"` linking. Saves the PLT
+# relocation but requires a toolchain that supports static syscalls.
+# Forwards to the same flag on every dep that exposes one.
+static-syscalls = [
+    "solana-secp256k1/static-syscalls",
+    "solana-nostd-sha256?/static-syscalls",
+    "solana-nostd-keccak?/static-syscalls",
+    "solana-rfc6979?/static-syscalls",
+]
 
-[lib]
-crate-type = ["lib", "cdylib"]
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
 
 [dependencies]
-itoa = { version = "1.0.17", optional = true }
-solana-nostd-secp256k1-recover = "0.1.1"
-solana-secp256k1 = "0.1.6"
-solana-nostd-sha256 = { version = "0.1.3", optional = true }
-solana-nostd-keccak = { version = "0.1.3", optional = true }
-solana-rfc6979 = { version = "0.2.1", optional = true }
+itoa = { version = "1.0.18", optional = true }
+solana-secp256k1 = { version = "0.2.1" }
+solana-program-error = { version = "3", default-features = false }
+solana-nostd-sha256 = { version = "0.2.0", optional = true }
+solana-nostd-keccak = { version = "0.2.0", optional = true }
+solana-rfc6979 = { version = "0.3.0", optional = true }
+
+[dev-dependencies]
+svm-unit-test = "0.1.5"
